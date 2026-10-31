@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Road Accident Analysis & Hotspot Detection</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="container-fluid px-4 py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <div class="eyebrow">GIS • EXPLORATORY DATA ANALYSIS • MACHINE LEARNING</div>
+        <h1>Road Accident Analysis</h1>
+        <p class="mb-0">GIS-Based Hotspot Detection and Analysis Dashboard</p>
+      </div>
+      <div class="header-tag"><span class="live-dot"></span> Interactive project dashboard</div>
+    </div>
+  </div>
+</header>
+
+<main class="container-fluid px-4 py-4">
+  {% if startup_error %}
+  <div class="alert alert-danger">
+    <strong>Dataset initialization error:</strong> {{ startup_error }}
+    <div>Check that <code>IndianRoads_dataset.xlsx</code> is inside the <code>data</code> folder.</div>
+  </div>
+  {% endif %}
+
+  <section class="filter-panel mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h2 class="section-title mb-1">Explore accident records</h2>
+        <div class="muted small">Filters update the KPI cards, charts, map and tables together.</div>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" id="resetBtn">Reset filters</button>
+    </div>
+    <div class="row g-3">
+      <div class="col-6 col-md-4 col-xl-2">
+        <label class="form-label" for="stateFilter">State</label>
+        <select class="form-select" id="stateFilter"><option>All</option></select>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <label class="form-label" for="cityFilter">City</label>
+        <select class="form-select" id="cityFilter"><option>All</option></select>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <label class="form-label" for="severityFilter">Severity</label>
+        <select class="form-select" id="severityFilter"><option>All</option></select>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <label class="form-label" for="causeFilter">Cause</label>
+        <select class="form-select" id="causeFilter"><option>All</option></select>
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <label class="form-label" for="startDate">From date</label>
+        <input class="form-control" type="date" id="startDate">
+      </div>
+      <div class="col-6 col-md-4 col-xl-2">
+        <label class="form-label" for="endDate">To date</label>
+        <input class="form-control" type="date" id="endDate">
+      </div>
+    </div>
+  </section>
+
+  <section class="row g-3 mb-4" id="kpiRow">
+    <div class="col-6 col-xl-2"><div class="kpi-card"><div class="kpi-label">Total accidents</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-note">Filtered records</div></div></div>
+    <div class="col-6 col-xl-2"><div class="kpi-card"><div class="kpi-label">Fatal accidents</div><div class="kpi-value danger" id="kpiFatal">—</div><div class="kpi-note">Severity marked fatal</div></div></div>
+    <div class="col-6 col-xl-2"><div class="kpi-card"><div class="kpi-label">Cities covered</div><div class="kpi-value" id="kpiCities">—</div><div class="kpi-note">Unique cities</div></div></div>
+    <div class="col-6 col-xl-2"><div class="kpi-card"><div class="kpi-label">Hotspot clusters</div><div class="kpi-value" id="kpiClusters">—</div><div class="kpi-note">DBSCAN clusters</div></div></div>
+    <div class="col-6 col-xl-2"><div class="kpi-card"><div class="kpi-label">Total casualties</div><div class="kpi-value" id="kpiCasualties">—</div><div class="kpi-note">Recorded casualties</div></div></div>
+    <div class="col-6 col-xl-2"><div class="kpi-card"><div class="kpi-label">Average risk score</div><div class="kpi-value" id="kpiRisk">—</div><div class="kpi-note">Mean risk score</div></div></div>
+  </section>
+
+  <section class="panel mb-4">
+    <div class="panel-heading">
+      <div><h2 class="section-title">Accident hotspot map</h2><p class="muted small mb-0">Individual accident points and DBSCAN hotspot centres. Zoom or select a marker for details.</p></div>
+      <div class="map-legend"><span><i class="legend-dot accident"></i> Accident record</span><span><i class="legend-dot hotspot"></i> Hotspot centre</span></div>
+    </div>
+    <div id="map"></div>
+    <div class="map-footnote">Map points are sampled to keep the browser responsive; hotspot centres are calculated from all filtered records.</div>
+  </section>
+
+  <section class="row g-3 mb-4">
+    <div class="col-12 col-lg-6"><div class="panel chart-panel"><h2 class="section-title">Accidents by severity</h2><canvas id="severityChart"></canvas></div></div>
+    <div class="col-12 col-lg-6"><div class="panel chart-panel"><h2 class="section-title">Accidents by cause</h2><canvas id="causeChart"></canvas></div></div>
+    <div class="col-12"><div class="panel chart-panel wide-chart"><h2 class="section-title">Accidents over time (monthly)</h2><canvas id="monthlyChart"></canvas></div></div>
+    <div class="col-12 col-lg-6"><div class="panel chart-panel"><h2 class="section-title">Accidents by hour</h2><canvas id="hourlyChart"></canvas></div></div>
+    <div class="col-12 col-lg-6"><div class="panel chart-panel"><h2 class="section-title">Top cities by accident records</h2><canvas id="citiesChart"></canvas></div></div>
+    <div class="col-12 col-lg-6"><div class="panel chart-panel"><h2 class="section-title">Accidents by weather</h2><canvas id="weatherChart"></canvas></div></div>
+    <div class="col-12 col-lg-6"><div class="panel chart-panel"><h2 class="section-title">Accidents by road type</h2><canvas id="roadChart"></canvas></div></div>
+  </section>
+
+  <section class="panel mb-4">
+    <div class="panel-heading"><div><h2 class="section-title">Hotspot cluster details</h2><p class="muted small mb-0">DBSCAN uses a 1 km neighbourhood radius and minimum 5 records.</p></div><span class="small muted" id="hotspotCount"></span></div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Cluster ID</th><th>Accident count</th><th>Fatal accidents</th><th>City</th><th>State</th><th>Centre latitude</th><th>Centre longitude</th></tr></thead>
+        <tbody id="hotspotTable"><tr><td colspan="7" class="text-center muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading"><div><h2 class="section-title">Accident records</h2><p class="muted small mb-0">Latest 100 matching records are shown below.</p></div><span class="small muted" id="recordCount"></span></div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Accident ID</th><th>City</th><th>State</th><th>Date</th><th>Time</th><th>Severity</th><th>Cause</th><th>Road type</th><th>Casualties</th><th>Cluster</th></tr></thead>
+        <tbody id="recordsTable"><tr><td colspan="10" class="text-center muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  <footer class="text-center py-4">Road Accident Analysis & Hotspot Detection · Flask · Python · DBSCAN · BallTree</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

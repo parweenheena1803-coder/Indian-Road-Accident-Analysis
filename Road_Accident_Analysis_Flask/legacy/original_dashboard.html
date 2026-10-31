@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+       <title>Road Accident Hotspot Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f3f6fb;
+            font-family: Arial, sans-serif;
+            color: #25344a;
+        }
+
+        .header {
+            background: #172b4d;
+            color: white;
+            padding: 25px 30px;
+        }
+
+        .header p {
+            margin: 6px 0 0;
+            color: #cbd8eb;
+        }
+
+        .dashboard {
+            padding: 25px;
+        }
+
+        .stat-card, .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 14px rgba(25, 45, 75, 0.06);
+        }
+
+        .stat-card {
+            border-left: 4px solid #168aad;
+        }
+
+        .stat-card h6 {
+            color: #6b778c;
+            font-size: 14px;
+        }
+
+        .stat-card h2 {
+            font-size: 30px;
+            margin: 10px 0 0;
+            color: #172b4d;
+        }
+
+        .panel h5 {
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        #map {
+            height: 420px;
+            width: 100%;
+            border-radius: 9px;
+            background: #e8edf4;
+        }
+
+        .chart-area {
+            height: 280px;
+            border: 1px dashed #d4dce7;
+            border-radius: 9px;
+            background: #fafbfd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #8a96a8;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .table th {
+            background: #f0f4f9;
+            color: #44536a;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .table td {
+            height: 45px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 18px;
+            color: #7b8797;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+    <h2>Road Accident Analysis</h2>
+    <p>GIS-Based Hotspot Detection and Analysis Dashboard</p>
+</header>
+
+<main class="dashboard container-fluid">
+
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="stat-card">
+                <h6>Total Accidents</h6>
+                <h2>—</h2>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="stat-card">
+                <h6>Hotspot Clusters</h6>
+                <h2>—</h2>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="stat-card">
+                <h6>Cities Covered</h6>
+                <h2>—</h2>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="stat-card">
+                <h6>Fatal Accidents</h6>
+                <h2>—</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hotspot Map -->
+    <section class="panel">
+        <h5>Accident Hotspot Map</h5>
+        <p class="text-secondary">
+            Geographic visualization of accident-prone locations
+        </p>
+
+        <div id="map"></div>
+
+        <div class="legend">
+            <span class="legend-item">
+                <span class="dot" style="background:#e63946"></span>
+                Cluster 1
+            </span>
+            <span class="legend-item">
+                <span class="dot" style="background:#277da1"></span>
+                Cluster 2
+            </span>
+            <span class="legend-item">
+                <span class="dot" style="background:#2a9d8f"></span>
+                Cluster 3
+            </span>
+            <span class="legend-item">
+                <span class="dot" style="background:#f4a261"></span>
+                Cluster 4
+            </span>
+            <span class="legend-item">
+                <span class="dot" style="background:#805ad5"></span>
+                Other clusters
+            </span>
+        </div>
+    </section>
+
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-lg-6">
+            <section class="panel">
+                <h5>Accidents by Severity</h5>
+                <div class="chart-area">
+                    Severity chart area
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-6">
+            <section class="panel">
+                <h5>Accidents by Cause</h5>
+                <div class="chart-area">
+                    Accident cause chart area
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Hotspot Table -->
+    <section class="panel">
+        <h5>Hotspot Cluster Details</h5>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Cluster</th>
+                        <th>Accident Count</th>
+                        <th>Fatal Accidents</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4" class="text-center text-secondary">
+                            No data added
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Accident Records -->
+    <section class="panel">
+        <h5>Accident Records</h5>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>City</th>
+                        <th>Date</th>
+                        <th>Severity</th>
+                        <th>Cause</th>
+                        <th>Cluster</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center text-secondary">
+                            No records added
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    Road Accident Hotspot Detection and Analysis | BCA Project
+</footer>
+
+</body>
+</html>
